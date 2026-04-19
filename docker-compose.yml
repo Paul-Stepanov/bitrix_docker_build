@@ -1,0 +1,106 @@
+# Services
+services:
+  # Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: "bitrix_nginx_${PROJECT_NAME}"
+    working_dir: /var/www/html
+    ports:
+      - "${PORT_NGINX:-80}:80"
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+      - ./src:/var/www/html
+      - ./nginx/conf.d:/etc/nginx/templates
+      - ./nginx/snippets:/etc/nginx/snippets
+      - ./nginx/cache:/var/cache/nginx/images
+    environment:
+      - IMAGE_PROXY_DOMAIN
+    networks:
+      bitrix_network:
+        ipv4_address: 172.16.238.11
+    depends_on:
+      - php
+    restart: unless-stopped
+
+  # PHP Service
+  php:
+    container_name: "bitrix_php_${PROJECT_NAME}"
+    build:
+      context: ./php
+      args:
+        NODE_VERSION: ${NODE_VERSION:-22}
+        PHP_INI_TYPE: ${PHP_INI_TYPE:-development}
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+      - ./logs/php:/var/log/php
+    networks:
+      bitrix_network:
+        ipv4_address: 172.16.238.12
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "localhost:172.16.238.11"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+      PHP_IDE_CONFIG: "serverName=${PHP_IDE_CONFIG_SERVER_NAME}" # PHP_IDE_CONFIG_SERVER_NAME - так-же должен называться сервер xDebug в настройках PhpStorm
+    healthcheck:
+      test: [ "CMD", "php-fpm", "-t" ]
+      interval: 10s
+      retries: 3
+
+  # Redis Service
+  redis:
+    image: redis:7-alpine
+    container_name: "bitrix_redis_${PROJECT_NAME}"
+    networks:
+      bitrix_network:
+        ipv4_address: 172.16.238.14
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  # MySQL Service
+  mysql:
+    container_name: "bitrix_mysql_${PROJECT_NAME}"
+    build: ./mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --log-bin-trust-function-creators=1
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    working_dir: /db
+    volumes:
+      - "./mysql/my.cnf:/etc/mysql/conf.d/my.cnf"
+      - "./mysql/db:/db"
+      - "mysql_data:/var/lib/mysql"
+      - "./logs/db:/var/log"
+    networks:
+      bitrix_network:
+        ipv4_address: 172.16.238.13
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+    ports:
+      - "${PORT_MYSQL:-3306}:3306"
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Networks
+networks:
+  bitrix_network:
+    ipam:
+      config:
+        - subnet: 172.16.238.0/24
