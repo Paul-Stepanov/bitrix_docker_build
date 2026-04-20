@@ -41,7 +41,6 @@ RUN usermod -u ${USER_ID} www-data \
 # Конфигурация PHP: базовый ini + кастомный override
 RUN cp /usr/local/etc/php/php.ini-${PHP_INI_TYPE} /usr/local/etc/php/php.ini
 
-COPY ./php.ini "$PHP_INI_DIR/conf.d/90-php.ini"
 COPY ./www.conf /usr/local/etc/php-fpm.d/www.conf
 COPY ./setup-cron.sh /usr/local/bin/setup-cron.sh
 RUN chmod +x /usr/local/bin/setup-cron.sh
