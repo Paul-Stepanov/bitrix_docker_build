@@ -28,6 +28,7 @@ services:
     build:
       context: ./php
       args:
+        PHP_VERSION: ${PHP_VERSION:-8.3}
         NODE_VERSION: ${NODE_VERSION:-22}
         PHP_INI_TYPE: ${PHP_INI_TYPE:-development}
     working_dir: /var/www/html
