@@ -16,12 +16,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl mc nano git zip unzip cron htop imagemagick \
     libpng-dev libjpeg-dev libtiff-dev libmcrypt-dev libmagickwand-dev \
     libicu-dev libzip-dev libc-dev pkg-config libcurl4-openssl-dev libssl-dev \
-    libfreetype6-dev libjpeg62-turbo-dev \
+    libfreetype6-dev libjpeg62-turbo-dev libwebp-dev \
     && curl -sSL https://deb.nodesource.com/setup_${NODE_VERSION}.x -o /tmp/nodesource_setup.sh \
     && bash /tmp/nodesource_setup.sh \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -f /tmp/nodesource_setup.sh \
-    && docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg=/usr/local/lib \
+    && docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg=/usr/local/lib --with-webp \
     && docker-php-ext-install pdo pdo_mysql gd mysqli zip exif opcache intl \
     && pecl install imagick && docker-php-ext-enable imagick \
     && pecl install igbinary && docker-php-ext-enable igbinary \
